@@ -2,7 +2,7 @@
 /* jshint expr: true */
 
 var chai = require('chai')
-  , SessionStrategy = require('../../lib/strategies/session');
+  , SessionStrategy = require('../../lib/strategies/session').default;
 
 
 describe('SessionStrategy', function() {

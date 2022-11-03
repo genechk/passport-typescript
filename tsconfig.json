@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "target": "es5",
+    "lib": ["es6"],
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "moduleResolution": "node",
+    "strict": true,
+    "sourceMap": false,
+    "skipLibCheck": true,
+    "outDir": "lib",
+    "rootDir": "src",
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": ["./src/*"],
+      "@types": ["./types/index.d.ts"]
+    }
+  },
+  "compileOnSave": true,
+  "include": ["./src", "./types"]
+}
