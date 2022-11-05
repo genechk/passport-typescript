@@ -42,14 +42,13 @@
   "devDependencies": {
     "@types/express": "^4.17.14",
     "@types/node": "^18.11.9",
-    "@types/passport-strategy": "^0.2.35",
     "@types/pause": "^0.1.0",
     "@types/utils-merge": "^0.0.28",
-    "make-node": "0.3.x",
-    "mocha": "2.x.x",
     "chai": "2.x.x",
     "chai-connect-middleware": "0.3.x",
     "chai-passport-strategy": "0.2.x",
+    "make-node": "0.3.x",
+    "mocha": "2.x.x",
     "proxyquire": "1.4.x",
     "typescript": "^4.8.4"
   },

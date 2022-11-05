@@ -1,11 +1,11 @@
 /**
  * Module dependencies.
  */
-import type Express from 'express';
+import type { Handler } from 'express';
 
 import initialize from '../middleware/initialize';
 import authenticate from '../middleware/authenticate';
-import type passport from '@types';
+import type { IFramework } from 'types';
 
 /**
  * Framework support for Connect/Express.
@@ -18,7 +18,7 @@ import type passport from '@types';
  */
 export default function () {
   return {
-    initialize: initialize,
-    authenticate: authenticate,
-  } as passport.Framework<Express.Handler, ReturnType<typeof authenticate>>;
+    initialize,
+    authenticate,
+  } as IFramework<Handler>;
 }

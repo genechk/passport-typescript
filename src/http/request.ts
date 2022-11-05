@@ -1,4 +1,4 @@
-import type { Request, LogoutOptions } from '@types';
+import type { LoginOptions, LogoutOptions, Request, User } from '@types';
 
 const req = {} as Request;
 
@@ -22,28 +22,31 @@ const req = {} as Request;
  * @param {Function} done
  * @api public
  */
-req.login = req.logIn = function (user, options, done) {
+req.login = req.logIn = function <
+  Callback extends (err?: Error | null | 'pass') => void,
+  //   T extends LoginOptions | Callback,
+>(user: User, options: LoginOptions | Callback, done?: Callback) {
   if (typeof options == 'function') {
     done = options;
     options = {};
   }
   options = options || {};
 
-  var property = this._userProperty || 'user';
-  var session = options.session === undefined ? true : options.session;
+  const property = this._userProperty || 'user';
+  const session = options.session === undefined ? true : options.session;
 
   this[property] = user;
   if (session && this._sessionManager) {
-    if (typeof done != 'function') {
+    if (typeof done !== 'function') {
       throw new Error('req#login requires a callback function');
     }
 
-    this._sessionManager.logIn(this, user, options, (err?: Error) => {
+    this._sessionManager.logIn(this, user, options, (err?: Error | 'pass') => {
       if (err) {
         this[property] = null;
-        return done(err);
+        return done!(err);
       }
-      done();
+      done!();
     });
   } else {
     done && done();
@@ -56,8 +59,8 @@ req.login = req.logIn = function (user, options, done) {
  * @api public
  */
 req.logout = req.logOut = function (
-  options?: LogoutOptions | ((err?: any) => void),
-  done?: (err?: any) => void,
+  options?: LogoutOptions | ((err?: Error) => void),
+  done?: (err?: Error) => void,
 ) {
   if (typeof options === 'function') {
     done = options;
@@ -69,7 +72,7 @@ req.logout = req.logOut = function (
 
   this[property] = null;
   if (this._sessionManager) {
-    if (typeof done != 'function') {
+    if (typeof done !== 'function') {
       throw new Error('req#logout requires a callback function');
     }
 
@@ -86,7 +89,7 @@ req.logout = req.logOut = function (
  * @api public
  */
 req.isAuthenticated = function () {
-  var property = this._userProperty || 'user';
+  const property = this._userProperty || 'user';
   return this[property] ? true : false;
 };
 

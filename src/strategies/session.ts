@@ -8,11 +8,12 @@ import type { Stream } from 'stream';
 // import Strategy from 'passport-strategy';
 
 import type {
-  PassportStatic,
+  DeserializeUser,
   SessionOptions,
   StrategyOptions,
-  Strategy as IStrategy,
+  IStrategy,
   Request,
+  User,
 } from '@types';
 
 /**
@@ -45,15 +46,15 @@ class Strategy implements IStrategy {
  */
 class SessionStrategy extends Strategy {
   constructor(
-    options?: SessionOptions | PassportStatic['deserializeUser'],
-    deserializeUser?: PassportStatic['deserializeUser'],
+    options?: SessionOptions | DeserializeUser,
+    deserializeUser?: DeserializeUser,
   ) {
     super();
     if (typeof options === 'function') {
-      deserializeUser = options as PassportStatic['deserializeUser'];
+      deserializeUser = options as DeserializeUser;
       options = undefined;
     }
-    options = options || ({} as SessionOptions);
+    options = (options as SessionOptions) || ({} as SessionOptions);
 
     this.name = 'session';
     this._key = options.key || 'passport';
@@ -61,13 +62,13 @@ class SessionStrategy extends Strategy {
   }
 
   name: string;
-  error: (error: Error) => never = (error: Error) => {
+  error: (error: Error | 'pass') => never = (error: Error | 'pass') => {
     throw error;
   };
   pass = () => {};
 
   private _key: string;
-  private _deserializeUser: PassportStatic['deserializeUser'];
+  private _deserializeUser: DeserializeUser;
 
   /**
    * Authenticate request based on the current session state.
@@ -82,7 +83,7 @@ class SessionStrategy extends Strategy {
    * @param {Object} options
    * @api protected
    */
-  authenticate(req: Request, options: SessionOptions) {
+  authenticate(req: Request, options = {} as SessionOptions): void {
     if (!req.session) {
       return this.error(
         new Error(
@@ -90,11 +91,9 @@ class SessionStrategy extends Strategy {
         ),
       );
     }
-    options = options || {};
-    const session = req.session!;
+    const session = req.session;
 
-    const self = this;
-    let su;
+    let su: User | number | undefined;
     if (session[this._key]) {
       su = session[this._key].user;
     }
@@ -104,10 +103,7 @@ class SessionStrategy extends Strategy {
       //       listening for events emitted from request.  For discussion on the
       //       matter, refer to: https://github.com/jaredhanson/passport/pull/106
 
-      const paused = options.pauseStream
-        ? pause(req as unknown as Stream)
-        : null;
-      // @ts-ignore
+      const paused = options.pauseStream ? pause(req) : null;
       this._deserializeUser(su, req, (err, user) => {
         if (err) {
           return this.error(err);
@@ -115,7 +111,7 @@ class SessionStrategy extends Strategy {
         if (!user) {
           delete session[this._key].user;
         } else {
-          var property = req._userProperty || 'user';
+          const property = req._userProperty || 'user';
           req[property] = user;
         }
         this.pass();

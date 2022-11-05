@@ -2,9 +2,11 @@
  * Module dependencies.
  */
 import IncomingMessageExt from '../http/request';
-import type { NextFunction } from 'express';
+import type { Handler, NextFunction, Response } from 'express';
 
-import type { InitializeOptions, PassportStatic, Request } from '@types';
+import type { InitializeOptions, Request } from '@types';
+
+import type Authenticator from '@src/authenticator';
 
 /**
  * Passport initialization.
@@ -48,16 +50,10 @@ import type { InitializeOptions, PassportStatic, Request } from '@types';
  * @api public
  */
 export default function initializer(
-  passport: PassportStatic,
-  options: InitializeOptions,
-) {
-  options = options || {};
-
-  return function initialize(
-    req: Request,
-    res: Express.Response,
-    next: NextFunction,
-  ) {
+  passport: Authenticator<Handler>,
+  options = {} as InitializeOptions,
+): Handler {
+  return function initialize(req: Request, _res: Response, next: NextFunction) {
     req.login = req.logIn = req.logIn || IncomingMessageExt.logIn;
     req.logout = req.logOut = req.logOut || IncomingMessageExt.logOut;
     req.isAuthenticated =
@@ -71,7 +67,7 @@ export default function initializer(
       req._userProperty = options.userProperty;
     }
 
-    var compat = options.compat === undefined ? true : options.compat;
+    const compat = options.compat === undefined ? true : options.compat;
     if (compat) {
       // `passport@0.5.1` [removed][1] all internal use of `req._passport`.
       // From the standpoint of this package, this should have been a
@@ -100,7 +96,7 @@ export default function initializer(
       // [4]: https://github.com/jaredhanson/passport/issues/877
       passport._userProperty = options.userProperty || 'user';
 
-      req._passport = {} as { instance: PassportStatic };
+      req._passport = {} as { instance: Authenticator<Handler> };
       req._passport.instance = passport;
     }
 

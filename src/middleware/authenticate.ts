@@ -2,23 +2,22 @@
  * Module dependencies.
  */
 import http from 'http';
-import type { NextFunction, Response } from 'express';
+import type { NextFunction, Response, Handler } from 'express';
 
 import IncomingMessageExt from '../http/request';
 import AuthenticationError from '../errors/authenticationerror';
+import type Authenticator from '@src/authenticator';
 import type {
   AuthenticateCallback,
   AuthOptions,
-  Challenge,
-  MaybeChallenge,
-  PassportStatic,
+  Failure,
+  FlashMessage,
+  MaybeFlashMessage,
+  MaybeInfoOrStrategy,
   Request,
-  Strategy,
   StrategyCreated,
-  StrategyCreatedStatic,
   User,
 } from '@types';
-import passport from '@types';
 
 /**
  * Authenticates requests.
@@ -82,13 +81,13 @@ import passport from '@types';
  * @api public
  */
 export default function authenticate(
-  passport: PassportStatic,
-  name: MaybeChallenge | MaybeChallenge[],
+  passport: Authenticator<Handler>,
+  name: MaybeInfoOrStrategy | MaybeInfoOrStrategy[],
   options?: AuthOptions | AuthenticateCallback,
   callback?: AuthenticateCallback,
 ) {
   if (typeof options === 'function') {
-    callback = options as (err?: Error) => void;
+    callback = options;
     options = {} as AuthOptions;
   }
   options = options || ({} as AuthOptions);
@@ -125,7 +124,7 @@ export default function authenticate(
     req._sessionManager = passport._sm;
 
     // accumulator for failures from each strategy in the chain
-    const failures: { challenge?: string | Challenge; status: number }[] = [];
+    const failures: Failure[] = [];
 
     const allFailed = () => {
       if (callback) {
@@ -145,9 +144,10 @@ export default function authenticate(
 
       // Strategies are ordered by priority. For the purpose of flashing a
       // message, the first failure will be displayed.
-      let failure = failures[0] || {};
-      let challenge: MaybeChallenge = failure.challenge || ({} as Challenge);
-      let msg: string;
+      let failure = failures[0] || ({} as Failure);
+      let challenge: MaybeInfoOrStrategy =
+        failure.challenge || ({} as FlashMessage);
+      let msg: boolean | string;
 
       const { failureFlash, failureMessage, failureRedirect, failWithError } =
         options as AuthOptions;
@@ -162,11 +162,13 @@ export default function authenticate(
         }
 
         const type =
-          (flash as Challenge).type || (challenge as Challenge).type || 'error';
+          (flash as MaybeFlashMessage)?.type ||
+          (challenge as MaybeFlashMessage)?.type ||
+          'error';
 
         msg =
-          (flash as Challenge).message ||
-          (challenge as Challenge).message ||
+          (flash as MaybeFlashMessage)?.message ||
+          (challenge as MaybeFlashMessage)?.message ||
           (challenge as string);
         if (typeof msg === 'string' && typeof req.flash === 'function') {
           req.flash(type, msg);
@@ -175,7 +177,8 @@ export default function authenticate(
       if (failureMessage) {
         msg = failureMessage;
         if (typeof msg === 'boolean') {
-          msg = (challenge as Challenge).message || (challenge as string);
+          msg =
+            (challenge as MaybeFlashMessage)?.message || (challenge as string);
         }
         if (typeof msg === 'string' && !!req.session) {
           req.session.messages = req.session.messages || [];
@@ -191,9 +194,9 @@ export default function authenticate(
       // header will be set according to the strategies in use (see
       // actions#fail).  If multiple strategies failed, each of their challenges
       // will be included in the response.
-      const rchallenge = [];
-      let rstatus;
-      let status;
+      const rchallenge: string[] = [];
+      let rstatus: number | undefined;
+      let status: number;
 
       for (let j = 0, len = failures.length; j < len; j++) {
         failure = failures[j];
@@ -219,7 +222,7 @@ export default function authenticate(
     };
 
     (function attempt(i) {
-      const layer = (name as MaybeChallenge[])[i];
+      const layer = (name as MaybeInfoOrStrategy[])[i];
       // If no more strategies exist in the chain, authentication has failed.
       if (!layer) {
         return allFailed();
@@ -228,15 +231,12 @@ export default function authenticate(
       // Get the strategy, which will be used as prototype from which to create
       // a new instance.  Action functions will then be bound to the strategy
       // within the context of the HTTP request/response pair.
-      let strategy: StrategyCreated<PassportStatic>;
-      let prototype: StrategyCreated<PassportStatic>;
-      if (
-        typeof (layer as StrategyCreated<PassportStatic>).authenticate ===
-        'function'
-      ) {
-        strategy = layer as StrategyCreated<PassportStatic>;
+      let strategy: StrategyCreated<Authenticator<Handler>>;
+      let prototype: typeof strategy;
+      if (typeof (layer as typeof strategy)?.authenticate === 'function') {
+        strategy = layer as typeof strategy;
       } else {
-        prototype = passport._strategy(layer);
+        prototype = passport._strategy(layer as string);
         if (!prototype) {
           return next(
             new Error('Unknown authentication strategy "' + layer + '"'),
@@ -267,12 +267,12 @@ export default function authenticate(
        * @param {Object} info
        * @api public
        */
-      strategy.success = function (user: User, info?: Challenge) {
+      strategy.success = function (user: User, info?: FlashMessage) {
         if (callback) {
           return callback(null, user, info);
         }
 
-        info = info || ({} as Challenge);
+        info = info || ({} as FlashMessage);
         const {
           successFlash,
           successMessage,
@@ -281,7 +281,7 @@ export default function authenticate(
           successRedirect,
           authInfo,
         } = options as AuthOptions;
-        let msg;
+        let msg: string | boolean | FlashMessage;
 
         if (successFlash) {
           let flash = successFlash;
@@ -293,9 +293,13 @@ export default function authenticate(
           }
 
           const type =
-            (flash as Challenge).type || (info as Challenge).type || 'success';
+            (flash as MaybeFlashMessage)?.type ||
+            (info as MaybeFlashMessage)?.type ||
+            'success';
           msg =
-            (flash as Challenge).message || (info as Challenge).message || info;
+            (flash as MaybeFlashMessage)?.message ||
+            (info as MaybeFlashMessage)?.message ||
+            info;
           if (typeof msg === 'string' && typeof req.flash === 'function') {
             req.flash(type, msg);
           }
@@ -303,7 +307,7 @@ export default function authenticate(
         if (successMessage) {
           msg = successMessage;
           if (typeof msg == 'boolean') {
-            msg = (info as Challenge).message || info;
+            msg = (info as MaybeFlashMessage)?.message || info;
           }
           if (typeof msg === 'string' && req.session) {
             req.session.messages = req.session.messages || [];
@@ -336,8 +340,7 @@ export default function authenticate(
           };
 
           if (authInfo !== false) {
-            // @ts-ignore
-            passport.transformAuthInfo(info, req, (err, tinfo) => {
+            passport.transformAuthInfo(info!, req, (err, tinfo) => {
               if (err) {
                 return next(err);
               }
@@ -360,12 +363,14 @@ export default function authenticate(
        * @param {Number} status
        * @api public
        */
-      strategy.fail = function (
-        challenge: Challenge | number | undefined,
-        status?: number,
+      strategy.fail = function <T extends number | undefined>(
+        challenge: T extends number
+          ? FlashMessage | string | undefined
+          : number | undefined,
+        status: T,
       ) {
         if (typeof challenge === 'number') {
-          status = challenge;
+          status = challenge as T;
           challenge = undefined;
         }
 
@@ -436,10 +441,7 @@ export default function authenticate(
 
       // ----- END STRATEGY AUGMENTATION -----
 
-      strategy.authenticate(
-        req,
-        options as unknown as passport.AuthenticateOptions,
-      );
+      strategy.authenticate(req, options as AuthOptions);
     })(0); // attempt
   };
 }

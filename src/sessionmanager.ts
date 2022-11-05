@@ -1,38 +1,37 @@
 import merge from 'utils-merge';
 
 import type {
-  PassportStatic,
-  SessionOptions,
-  ISessionManager,
-  Request,
-  LogoutOptions,
-  User,
   LoginOptions,
+  LogoutOptions,
+  Request,
+  SerializeUser,
+  SessionOptions,
+  User,
 } from '@types';
 
 class SessionManager {
   constructor(
-    options?: SessionOptions | PassportStatic['serializeUser'],
-    serializeUser?: PassportStatic['serializeUser'],
+    options?: SessionOptions | SerializeUser,
+    serializeUser?: SerializeUser,
   ) {
     if (typeof options == 'function') {
       serializeUser = options;
       options = undefined;
     }
-    options = options || ({} as SessionOptions);
+    options = (options as SessionOptions) || ({} as SessionOptions);
 
     this._key = options.key || 'passport';
     this._serializeUser = serializeUser;
   }
 
   private _key: string;
-  private _serializeUser;
+  private _serializeUser?: SerializeUser;
 
   logIn(
     req: Request,
     user: User,
     options: LoginOptions,
-    cb: (err?: Error) => void,
+    cb: (err?: Error | 'pass') => void,
   ) {
     if (typeof options == 'function') {
       cb = options;
@@ -57,29 +56,32 @@ class SessionManager {
         return cb(err);
       }
 
-      // @ts-ignore
-      this._serializeUser(user, req, (err, obj) => {
-        if (err) {
-          return cb(err);
-        }
-        if (options.keepSessionInfo) {
-          merge(req.session, prevSession);
-        }
-        const session = req.session!;
-        if (!session[this._key]) {
-          session[this._key] = {};
-        }
-        // store user information in session, typically a user id
-        session[this._key].user = obj;
-        // save the session before redirection to ensure page
-        // load does not happen before session is saved
-        session.save(err => {
+      this._serializeUser!<User>(
+        user,
+        req,
+        (err: Error | null | 0 | 'pass' | undefined, obj?: User) => {
           if (err) {
             return cb(err);
           }
-          cb();
-        });
-      });
+          if (options.keepSessionInfo) {
+            merge(req.session, prevSession);
+          }
+          const session = req.session!;
+          if (!session[this._key]) {
+            session[this._key] = {};
+          }
+          // store user information in session, typically a user id
+          session[this._key].user = obj;
+          // save the session before redirection to ensure page
+          // load does not happen before session is saved
+          session.save(err => {
+            if (err) {
+              return cb(err);
+            }
+            cb();
+          });
+        },
+      );
     });
   }
 

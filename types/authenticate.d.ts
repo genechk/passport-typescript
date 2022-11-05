@@ -1,13 +1,20 @@
 import type { User } from './user';
-import type { Challenge, MaybeChallenge } from './options';
+import type { FlashMessage, MaybeInfoOrStrategy } from './options';
 
 type AuthenticateCallback = {
   (
-    err: Nullable<Error>,
+    err: Error | null,
     maybeUser?: User | false,
-    message?: MaybeChallenge | MaybeChallenge[],
+    message?: MaybeInfoOrStrategy | MaybeInfoOrStrategy[],
     status?: number | number[],
   ): void;
 };
 
-export { AuthenticateCallback };
+type MaybeCallback = AuthenticateCallback | undefined;
+
+interface Failure {
+  challenge?: string | FlashMessage;
+  status: number;
+}
+
+export { AuthenticateCallback, Failure, MaybeCallback };

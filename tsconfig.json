@@ -6,20 +6,22 @@
     "lib": ["es6"],
     "noImplicitAny": true,
     "noImplicitThis": true,
-    "strictNullChecks": true,
+    "strictNullChecks": false,
     "strictFunctionTypes": true,
     "moduleResolution": "node",
     "strict": true,
     "sourceMap": false,
-    "skipLibCheck": true,
+    "skipLibCheck": false,
     "outDir": "lib",
     "rootDir": "src",
     "baseUrl": ".",
+    "types": [],
     "paths": {
       "@src/*": ["./src/*"],
       "@types": ["./types/index.d.ts"]
     }
   },
   "compileOnSave": true,
-  "include": ["./src", "./types"]
+  "include": ["./src", "./types"],
+  "exclude": ["node_modules"]
 }

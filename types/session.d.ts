@@ -1,16 +1,15 @@
 import type { User } from './user';
 
-interface Session
-  extends Record<
-    string,
-    {
-      user?: User;
-    }
-  > {
+type Session = Record<
+  string,
+  {
+    user?: User;
+  }
+> & {
   messages?: string[];
   returnTo?: string;
   save: (fn: (err?: Error) => void) => void;
   regenerate: (fn: (err?: Error) => void) => void;
-}
+};
 
-export { Session, ISessionManager };
+export { Session };

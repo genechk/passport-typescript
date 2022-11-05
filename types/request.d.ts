@@ -1,7 +1,10 @@
+import type { IncomingMessage } from 'http';
+
 import type { LoginOptions, LogoutOptions } from './options';
 import type { Session } from './session';
+import type { User } from './user';
 import type SessionManager from '@src/sessionmanager';
-import type { PassportStatic } from '@types';
+import type Authenticator from '@src/authenticator';
 
 type Logout = {
   <T extends LogoutOptions | ((err?: Error) => void)>(
@@ -10,30 +13,55 @@ type Logout = {
   ): void;
 };
 
-type Login = {};
+type Login = {
+  <
+    Callback extends (err?: Error | null | 'pass') => void,
+    T extends LoginOptions | Callback,
+  >(
+    user: User,
+    options: T,
+    done?: T extends LoginOptions ? Callback : undefined,
+  ): void;
+};
 
-interface Request extends Record<'user' | string, Express.User | null> {
-  authInfo?: AuthInfo | undefined;
-  user?: User | undefined;
+interface Request extends IncomingMessage {
+  authInfo?: IAuthInfo | undefined;
   session?: Session;
+  user?: User | null | undefined;
+  [userProperty: string]: User | null | undefined;
 
   _userProperty: string;
   _sessionManager?: SessionManager;
-  _passport: { instance: PassportStatic };
+  _passport: { instance: Authenticator };
 
   flash?: (type: string, msg: string) => void;
 
   // These declarations are merged into express's Request type
-  login(user: User, options: LoginOptions, done: (err?: Error) => void): void;
-  // login(user: User, done: (err: any) => void): void;
-  logIn(user: User, options: LoginOptions, done: (err?: Error) => void): void;
-  // logIn(user: User, done: (err: any) => void): void;
+  login: Login;
+  logIn: Login;
 
   logout: Logout;
   logOut: Logout;
 
-  isAuthenticated(): this is AuthenticatedRequest;
-  isUnauthenticated(): this is UnauthenticatedRequest;
+  isAuthenticated(): this is IAuthenticatedRequest;
+  isUnauthenticated(): this is IUnauthenticatedRequest;
 }
 
-export { Login, Logout, Request };
+interface IAuthInfo {}
+
+interface IAuthenticatedRequest extends Request {
+  user: User;
+}
+
+interface IUnauthenticatedRequest extends Request {
+  user?: undefined;
+}
+
+export {
+  IAuthenticatedRequest,
+  IAuthInfo,
+  IUnauthenticatedRequest,
+  Login,
+  Logout,
+  Request,
+};

@@ -1,3 +1,3 @@
-interface User extends Express.User {}
+interface User {}
 
 export { User };

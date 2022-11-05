@@ -12,32 +12,41 @@
 
 import { IncomingMessage } from 'http';
 
-import type { Request as ExtendedRequest } from './request';
-import type { InitializeOptions, SessionOptions } from './options';
+import type { Serializer } from './authenticator';
+import type {
+  Request as ExtendedRequest,
+  IAuthInfo,
+  IAuthenticatedRequest,
+  IUnauthenticatedRequest,
+} from './request';
+import type {
+  FlashMessage,
+  InitializeOptions,
+  SessionOptions,
+} from './options';
 import type SessionManager from '@src/sessionmanager';
 
 export * from './authenticate';
+export * from './authenticator';
+export * from './framework';
 export * from './options';
 export * from './request';
 export * from './session';
+export * from './strategy';
 export * from './user';
 
 declare global {
   namespace Express {
     // tslint:disable-next-line:no-empty-interface
-    interface AuthInfo {}
+    interface AuthInfo extends IAuthInfo {}
     // tslint:disable-next-line:no-empty-interface
     interface User {}
 
     interface Request extends ExtendedRequest {}
 
-    interface AuthenticatedRequest extends Request {
-      user: User;
-    }
+    interface AuthenticatedRequest extends IAuthenticatedRequest {}
 
-    interface UnauthenticatedRequest extends Request {
-      user?: undefined;
-    }
+    interface UnauthenticatedRequest extends IUnauthenticatedRequest {}
   }
 }
 
@@ -47,14 +56,14 @@ declare namespace passport {
   interface AuthenticateOptions {
     authInfo?: boolean | undefined;
     assignProperty?: string | undefined;
-    failureFlash?: string | boolean | undefined;
+    failureFlash?: string | boolean | FlashMessage | undefined;
     failureMessage?: boolean | string | undefined;
     failureRedirect?: string | undefined;
     failWithError?: boolean | undefined;
     keepSessionInfo?: boolean | undefined;
     session?: boolean | undefined;
     scope?: string | string[] | undefined;
-    successFlash?: string | boolean | undefined;
+    successFlash?: string | boolean | FlashMessage | undefined;
     successMessage?: boolean | string | undefined;
     successRedirect?: string | undefined;
     successReturnToOrRedirect?: string | undefined;
@@ -74,16 +83,22 @@ declare namespace passport {
     use(strategy: Strategy): this;
     use(name: string, strategy: Strategy): this;
     unuse(name: string): this;
-    framework<X, Y, Z>(fw: Framework<X, Y, Z>): Authenticator<X, Y, Z>;
+    framework<
+      X extends InitializeRet,
+      Y extends AuthenticateRet,
+      Z extends AuthorizeRet,
+    >(
+      fw: Framework<X, Y, Z>,
+    ): Authenticator<X, Y, Z>;
     initialize(options?: InitializeOptions): InitializeRet;
     session(options?: SessionOptions): AuthenticateRet;
 
     authenticate(
-      strategy: string | string[] | Strategy | Request,
+      strategy: string | string[] | Strategy | ExtendedRequest,
       callback?: (...args: any[]) => any,
     ): AuthenticateRet;
     authenticate(
-      strategy: string | string[] | Strategy | Request,
+      strategy: string | string[] | Strategy | ExtendedRequest,
       options: AuthenticateOptions,
       callback?: (...args: any[]) => any,
     ): AuthenticateRet;
@@ -99,12 +114,13 @@ declare namespace passport {
     serializeUser<TID>(
       fn: (user: Express.User, done: (err: any, id?: TID) => void) => void,
     ): void;
-    serializeUser<TID, TR extends IncomingMessage = express.Request>(
-      fn: (
-        req: TR,
-        user: Express.User,
-        done: (err: any, id?: TID) => void,
-      ) => void,
+    serializeUser<TID, TR extends IncomingMessage = ExtendedRequest>(
+      req: TR,
+      user: Express.User,
+      done: (err?: any, id?: TID) => void,
+    ): void;
+    serializeUser<TID, TR extends IncomingMessage = ExtendedRequest>(
+      fn: Serializer<TID, TR>,
     ): void;
     deserializeUser<TID>(
       fn: (
@@ -112,7 +128,7 @@ declare namespace passport {
         done: (err: any, user?: Express.User | false | null) => void,
       ) => void,
     ): void;
-    deserializeUser<TID, TR extends IncomingMessage = express.Request>(
+    deserializeUser<TID, TR extends IncomingMessage = ExtendedRequest>(
       fn: (
         req: TR,
         id: TID,
@@ -120,7 +136,7 @@ declare namespace passport {
       ) => void,
     ): void;
     transformAuthInfo(
-      fn: (info: any, done: (err: any, info: any) => void) => void,
+      fn: (info: any, done?: (err: any, info: any) => void) => void,
     ): void;
   }
 
@@ -128,7 +144,9 @@ declare namespace passport {
     _sm: SessionManager;
     _userProperty: string;
     instance: PassportStatic;
-    _strategy: (layer: string | Challenge) => StrategyCreated<PassportStatic>;
+    _strategy: (
+      layer: string | FlashMessage,
+    ) => StrategyCreated<PassportStatic>;
 
     Authenticator: { new (): Authenticator };
     Passport: PassportStatic['Authenticator'];
@@ -139,12 +157,13 @@ declare namespace passport {
     name: string;
     authenticate(
       this: StrategyCreated<this>,
-      req: express.Request,
+      req: ExtendedRequest,
       options?: any,
     ): any;
   }
 
   interface StrategyCreatedStatic {
+    name: string;
     /**
      * Authenticate `user`, with optional `info`.
      *
@@ -231,7 +250,7 @@ declare namespace passport {
     ): (...args: any[]) => InitializeRet;
     authenticate(
       passport: Authenticator<InitializeRet, AuthenticateRet, AuthorizeRet>,
-      name: string,
+      name: string | string[] | Strategy | ExtendedRequest,
       options?: any,
       callback?: (...args: any[]) => any,
     ): (...args: any[]) => AuthenticateRet;
@@ -245,4 +264,5 @@ declare namespace passport {
 }
 
 declare const passport: passport.PassportStatic;
-export = passport;
+
+// export = passport;

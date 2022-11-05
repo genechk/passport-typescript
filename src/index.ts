@@ -1,7 +1,7 @@
 /**
  * Module dependencies.
  */
-const Passport = require('./authenticator');
+import Passport from './authenticator';
 import SessionStrategy from './strategies/session';
 
 /**
