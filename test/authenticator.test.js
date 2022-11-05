@@ -1,7 +1,7 @@
 /* global describe, it, expect, before */
 /* jshint expr: true, sub: true */
 
-var Authenticator = require('../lib/authenticator');
+var Authenticator = require('../lib/authenticator').default;
 
 
 describe('Authenticator', function() {

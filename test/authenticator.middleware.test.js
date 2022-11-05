@@ -2,7 +2,7 @@
 /* jshint expr: true */
 
 var chai = require('chai')
-  , Authenticator = require('../lib/authenticator');
+  , Authenticator = require('../lib/authenticator').default;
 
 
 describe('Authenticator', function() {

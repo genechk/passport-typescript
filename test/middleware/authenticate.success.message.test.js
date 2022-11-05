@@ -1,7 +1,7 @@
 /* global describe, it, expect, before */
 
 var chai = require('chai')
-  , authenticate = require('../../lib/middleware/authenticate')
+  , authenticate = require('../../lib/middleware/authenticate').default
   , Passport = require('../..').Passport;
 
 

@@ -1,7 +1,7 @@
 /* global describe, it, expect, before */
 /* jshint expr: true */
 
-var request = require('../../lib/http/request')
+var request = require('../../lib/http/request').default
   , Passport = require('../..').Passport;
 
 

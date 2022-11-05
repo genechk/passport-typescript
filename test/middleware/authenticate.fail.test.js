@@ -2,7 +2,7 @@
 /* jshint expr: true */
 
 var chai = require('chai')
-  , authenticate = require('../../lib/middleware/authenticate')
+  , authenticate = require('../../lib/middleware/authenticate').default
   , Passport = require('../..').Passport;
 
 
@@ -218,7 +218,7 @@ describe('middleware/authenticate', function() {
     
     it('should error', function() {
       expect(error).to.be.an.instanceOf(Error);
-      expect(error.constructor.name).to.equal('AuthenticationError');
+      expect(error.name).to.equal('AuthenticationError');
       expect(error.message).to.equal('Unauthorized');
       expect(error.status).to.equal(401);
     });
@@ -263,7 +263,7 @@ describe('middleware/authenticate', function() {
     
     it('should error', function() {
       expect(error).to.be.an.instanceOf(Error);
-      expect(error.constructor.name).to.equal('AuthenticationError');
+      expect(error.name).to.equal('AuthenticationError');
       expect(error.message).to.equal('Unauthorized');
       expect(error.status).to.equal(401);
     });
@@ -308,7 +308,7 @@ describe('middleware/authenticate', function() {
     
     it('should error', function() {
       expect(error).to.be.an.instanceOf(Error);
-      expect(error.constructor.name).to.equal('AuthenticationError');
+      expect(error.name).to.equal('AuthenticationError');
       expect(error.message).to.equal('Bad Request');
       expect(error.status).to.equal(400);
     });
@@ -353,7 +353,7 @@ describe('middleware/authenticate', function() {
     
     it('should error', function() {
       expect(error).to.be.an.instanceOf(Error);
-      expect(error.constructor.name).to.equal('AuthenticationError');
+      expect(error.name).to.equal('AuthenticationError');
       expect(error.message).to.equal('Unauthorized');
       expect(error.status).to.equal(401);
     });
@@ -405,7 +405,7 @@ describe('middleware/authenticate', function() {
     
     it('should error', function() {
       expect(error).to.be.an.instanceOf(Error);
-      expect(error.constructor.name).to.equal('AuthenticationError');
+      expect(error.name).to.equal('AuthenticationError');
       expect(error.message).to.equal('Forbidden');
       expect(error.status).to.equal(403);
     });
@@ -450,7 +450,7 @@ describe('middleware/authenticate', function() {
     
     it('should error', function() {
       expect(error).to.be.an.instanceOf(Error);
-      expect(error.constructor.name).to.equal('AuthenticationError');
+      expect(error.name).to.equal('AuthenticationError');
       expect(error.message).to.equal('Payment Required');
       expect(error.status).to.equal(402);
     });

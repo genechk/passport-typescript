@@ -16,7 +16,7 @@ describe('SessionStrategy', function() {
     
     
     var SessionStrategy = $require('../../lib/strategies/session', { pause: pause });
-    var strategy = new SessionStrategy(function(user, req, done) {
+    var strategy = new SessionStrategy.default(function(user, req, done) {
       done(null, { id: user });
     });
     
@@ -79,7 +79,7 @@ describe('SessionStrategy', function() {
     
     
     var SessionStrategy = $require('../../lib/strategies/session', { pause: pause });
-    var strategy = new SessionStrategy(function(user, req, done) {
+    var strategy = new SessionStrategy.default(function(user, req, done) {
       done(null, false);
     });
     

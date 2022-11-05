@@ -2,7 +2,7 @@
 /* jshint expr: true */
 
 var chai = require('chai')
-  , authenticate = require('../../lib/middleware/authenticate')
+  , authenticate = require('../../lib/middleware/authenticate').default
   , Passport = require('../..').Passport;
 
 

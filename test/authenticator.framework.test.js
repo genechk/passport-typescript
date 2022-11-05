@@ -1,6 +1,6 @@
 /* global describe, it, expect */
 
-var Authenticator = require('../lib/authenticator');
+var Authenticator = require('../lib/authenticator').default;
 
 
 describe('Authenticator', function() {
